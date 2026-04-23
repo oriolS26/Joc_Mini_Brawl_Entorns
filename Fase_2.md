@@ -35,16 +35,16 @@ El sistema es divideix en tres blocs funcionals:
     * `UpdateUI()`: Envia senyals per actualitzar els punts a la pantalla.
 
 ## 5. Explicació del diagrama de classes
-> **Ubicació prevista:** `diagrames/diagrama_classes.png`
-
 El diagrama utilitza una estructura de **composició**. El `GameManager` conté les referències als `Combatants`. S'ha triat així perquè la lògica de victòria/derrota ha de ser externa als personatges per poder reiniciar la partida sense dependre de si el personatge existeix o s'ha destruït.
 
-## 6. Explicació del diagrama de comportament
-> **Ubicació prevista:** `diagrames/diagrama_comportament.png`
+![Diagrama de Classes](./img/Diagrama_Classes_blocs_joc.png)
 
+## 6. Explicació del diagrama de comportament
 S'ha optat per un **Diagrama d'Activitat** per representar el bucle principal:
 `Inici -> Espera Input -> Atac -> Detecció -> Aplicar Física -> Comprovar Caiguda -> Restar Vida -> Respawn`.
 Això reflecteix la naturalesa cíclica del joc i com el motor físic de Roblox s'intercala amb la nostra lògica.
+
+![Diagrama de Seqüència](./img/Diagrama_Seqüència_Funcionament.png)
 
 ## 7. Correspondència entre diagrames i codi futur
 * Les entitats es programaran com a **ModuleScripts** dins de `ReplicatedStorage` per a un accés ràpid.
