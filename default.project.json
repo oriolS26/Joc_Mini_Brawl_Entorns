@@ -10,7 +10,7 @@
     },
 
     "ServerScriptService": {
-        "$path": "src/server"
+        "$path": "src/server/ScriptServer.server.luau"
     },
 
     "StarterGui": {

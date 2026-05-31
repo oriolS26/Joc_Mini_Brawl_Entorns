@@ -1,80 +1,57 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local player = game.Players.LocalPlayer
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+-- Assegura't que el RemoteEvent s'anomena exactament així
+local remoteAtac = ReplicatedStorage:WaitForChild("AtacEnemic")
 
--- 1. CONFIGURACIÓ DE L'ESTAT
-_G.JocIniciat = false 
+-- Variable global per controlar si el joc ha començat
+_G.JocIniciat = _G.JocIniciat or false
 
-camera.CameraType = Enum.CameraType.Scriptable
-
--- 2. BUCLE DE CÀMERA (Es queda fixa fins que cliques el botó del menú)
-RunService.RenderStepped:Connect(function()
-	if _G.JocIniciat then
-		local char = player.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		
-		if root then
-			-- Càmera 2D dinàmica (segueix al personatge)
-			local targetPos = Vector3.new(root.Position.X, root.Position.Y + 2, 30)
-			camera.CFrame = CFrame.new(targetPos, Vector3.new(root.Position.X, root.Position.Y + 2, 0))
-		end
-	else
-		-- Càmera de menú (Vista al ring des de lluny)
-		camera.CFrame = CFrame.new(Vector3.new(0, 10, 30), Vector3.new(0, 0, 0))
-	end
-end)
-
--- 3. LÒGICA 2D I CONTROL DE MOVIMENT
-local function iniciarLogica(character)
-	local rootPart = character:WaitForChild("HumanoidRootPart")
-	local humanoid = character:WaitForChild("Humanoid")
-	
-	-- Bloqueig inicial: el jugador no es mou fins que el joc comenci
-	humanoid.WalkSpeed = 0
-	
-	task.spawn(function()
-		while not _G.JocIniciat do task.wait(0.1) end
-		humanoid.WalkSpeed = 16 -- Velocitat normal un cop triada dificultat
-	end)
-
-	-- Bloqueig de l'eix Z (Manté el joc en 2D)
-	local connexioZ = RunService.Heartbeat:Connect(function()
-		if not character:IsDescendantOf(workspace) then return end
-		local currentPos = rootPart.Position
-		rootPart.CFrame = CFrame.new(Vector3.new(currentPos.X, currentPos.Y, 0)) * rootPart.CFrame.Rotation
-	end)
-
-	humanoid.Died:Connect(function()
-		connexioZ:Disconnect()
-	end)
+-- Funció per bloquejar el personatge al pla 2D (Eix Z = 0)
+local function bloquejarPla2D(char)
+    local root = char:WaitForChild("HumanoidRootPart")
+    RunService.Heartbeat:Connect(function()
+        if not char or not char.Parent then return end
+        -- Fixem la posició Z a 0 i mantenim la rotació original
+        root.CFrame = CFrame.new(Vector3.new(root.Position.X, root.Position.Y, 0)) * root.CFrame.Rotation
+    end)
 end
 
-player.CharacterAdded:Connect(iniciarLogica)
-if player.Character then iniciarLogica(player.Character) end
+-- Configuració de la càmera fixa (RenderStepped)
+RunService.RenderStepped:Connect(function()
+    camera.CameraType = Enum.CameraType.Scriptable
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local root = char.HumanoidRootPart
+        
+        -- Bloqueig d'eix per moure's només en el pla 2D
+        root.CFrame = CFrame.new(Vector3.new(root.Position.X, root.Position.Y, 0)) * root.CFrame.Rotation
+        
+        if _G.JocIniciat then
+            -- Aquesta línia és la que determina la vista. 
+            -- Z = 30 fa que es vegi des de lluny, posa-ho a 20 si vols veure-ho més a prop.
+            -- El Vector3.new(root.Position.X, root.Position.Y, 0) fa que el focus sigui el personatge.
+            camera.CFrame = CFrame.new(Vector3.new(root.Position.X, 10, 30), Vector3.new(root.Position.X, 0, 0))
+        else
+            -- Vista inicial de menú
+            camera.CFrame = CFrame.new(Vector3.new(0, 10, 30), Vector3.new(0, 0, 0))
+        end
+    end
+end)
 
--- 4. SISTEMA D'ATAC (TECLA F)
+-- Detectar l'inici del personatge
+if player.Character then bloquejarPla2D(player.Character) end
+player.CharacterAdded:Connect(bloquejarPla2D)
+
+-- Lògica d'atac amb tecla F
 UserInputService.InputBegan:Connect(function(input, processed)
-	if processed or not _G.JocIniciat then return end -- No ataca si el menú està obert
-	
-	if input.KeyCode == Enum.KeyCode.F then
-		local char = player.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		
-		if root then
-			print("Atac executat!")
-			local hitbox = Instance.new("Part")
-			hitbox.Size = Vector3.new(4, 4, 2)
-			hitbox.Transparency = 0.5
-			hitbox.Color = Color3.fromRGB(255, 0, 0)
-			hitbox.CanCollide = false
-			hitbox.Anchored = true
-			hitbox.Parent = workspace
-			hitbox.CFrame = root.CFrame * CFrame.new(0, 0, -3)
-			
-			task.delay(0.2, function()
-				hitbox:Destroy()
-			end)
-		end
-	end
+    if processed then return end
+    
+    if input.KeyCode == Enum.KeyCode.F and _G.JocIniciat then
+        remoteAtac:FireServer()
+    end
 end)

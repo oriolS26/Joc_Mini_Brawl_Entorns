@@ -1,60 +1,55 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService") -- AFEGIT: Necessari per al Heartbeat
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 
--- 1. Configuració de la KillPart
-local killPart = workspace:WaitForChild("KillPart")
-killPart.Touched:Connect(function(hit)
-	local character = hit.Parent
-	local humanoid = character:FindFirstChild("Humanoid")
-	if humanoid then
-		humanoid.Health = 0
-	end
-end)
+-- Creació dels RemoteEvents
+local remoteAtac = Instance.new("RemoteEvent", ReplicatedStorage)
+remoteAtac.Name = "AtacEnemic"
+local remoteDificultat = ReplicatedStorage:FindFirstChild("SetDifficulty") or Instance.new("RemoteEvent", ReplicatedStorage)
+remoteDificultat.Name = "SetDifficulty"
 
--- 2. Configuració del RemoteEvent (Segur)
-local remote = ReplicatedStorage:FindFirstChild("SetDifficulty")
-if not remote then
-	remote = Instance.new("RemoteEvent")
-	remote.Name = "SetDifficulty"
-	remote.Parent = ReplicatedStorage
+local function crearCubEnemic()
+    if Workspace:FindFirstChild("EnemicIA") then Workspace.EnemicIA:Destroy() end
+    local model = Instance.new("Model", Workspace)
+    model.Name = "EnemicIA"
+    local cub = Instance.new("Part", model)
+    cub.Name = "HumanoidRootPart"
+    cub.Size = Vector3.new(4, 5, 4)
+    cub.Color = Color3.fromRGB(255, 0, 0)
+    cub.Position = Vector3.new(20, 10, 0)
+    cub.Anchored = false
+    cub.CanCollide = true
+    cub.Massless = false
+    
+    local hum = Instance.new("Humanoid", model)
+    model.PrimaryPart = cub
+    
+    -- Moviment 2D (persecució)
+    RunService.Heartbeat:Connect(function()
+        if not model.Parent then return end
+        local p = Players:GetPlayers()[1]
+        if p and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            hum:MoveTo(Vector3.new(p.Character.HumanoidRootPart.Position.X, cub.Position.Y, 0))
+        end
+    end)
+    return cub
 end
 
--- 3. Lògica de l'Enemic IA
-remote.OnServerEvent:Connect(function(player, dificultat)
-	print("SISTEMA: Iniciant enemic en mode: " .. dificultat)
-	
-	-- Creem un bloc que et persegueix (Enemic temporal)
-	local enemic = Instance.new("Part")
-	enemic.Name = "EnemicIA"
-	enemic.Size = Vector3.new(4, 6, 1)
-	enemic.Color = Color3.fromRGB(255, 0, 0)
-	enemic.Position = Vector3.new(20, 5, 0) -- Apareix una mica lluny
-	enemic.Anchored = true -- Perquè no caigui si no té Humanoid
-	enemic.CanCollide = false
-	enemic.Parent = workspace
-	
-	-- Ajustem la velocitat segons dificultat
-	local velocitat = 0.05
-	if dificultat == "Normal" then velocitat = 0.1 end
-	if dificultat == "Dificil" then velocitat = 0.2 end
-	
-	-- Moviment en 2D cap al jugador
-	RunService.Heartbeat:Connect(function()
-		if enemic.Parent then -- Comprovem que l'enemic encara existeixi
-			local char = player.Character
-			local root = char and char:FindFirstChild("HumanoidRootPart")
-			
-			if root then
-				local targetX = root.Position.X
-				local actualX = enemic.Position.X
-				
-				-- Si el jugador està a la dreta, suma; si està a l'esquerra, resta
-				if targetX > actualX then
-					enemic.Position = enemic.Position + Vector3.new(velocitat, 0, 0)
-				else
-					enemic.Position = enemic.Position - Vector3.new(velocitat, 0, 0)
-				end
-			end
-		end
-	end)
+remoteDificultat.OnServerEvent:Connect(function(player, diff)
+    local cub = crearCubEnemic()
+    cub.Parent.Humanoid.WalkSpeed = (diff == "Facil" and 8) or (diff == "Normal" and 14) or 22
+end)
+
+remoteAtac.OnServerEvent:Connect(function(player)
+    local enemic = Workspace:FindFirstChild("EnemicIA")
+    if enemic and enemic:FindFirstChild("HumanoidRootPart") then
+        local vel = Instance.new("LinearVelocity", enemic.HumanoidRootPart)
+        vel.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+        vel.VectorVelocity = Vector3.new(60, 20, 0)
+        vel.Attachment0 = Instance.new("Attachment", enemic.HumanoidRootPart)
+        Debris:AddItem(vel, 0.2)
+        Debris:AddItem(vel.Attachment0, 0.2)
+    end
 end)
