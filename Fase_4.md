@@ -29,6 +29,33 @@ Evidència del moment en què el personatge entra en contacte amb la KillPart i 
 ![KillPart](image-2.png)
 ---
 
+### 1. Menú d'inici i Selecció de Dificultat
+* **Descripció**: Interfície d'usuari on l'usuari tria la dificultat.
+* **Evidència**: ![Menú de selecció]![menu](<Captura de pantalla 2026-05-31 192411.png>)
+* **Validació**: Sistema d'interacció amb el Client (UI) i parada de l'auto-inici del joc.
+
+### 2. Sistema de Càrrega (Progress Bar)
+* **Descripció**: Animació de la `ProgressBar` quan el joc es prepara.
+* **Evidència**: ![Barra de progrés]![bar](<Captura de pantalla 2026-05-31 205418.png>)
+* **Validació**: Animació mitjançant `TweenService` i espera de l'usuari.
+
+### 3. Comportament de l'NPC i Físiques
+* **Descripció**: L'NPC seguint activament el jugador per la zona de combat.
+* **Evidència**: ![NPC en moviment]![física](<Captura de pantalla 2026-05-31 205620.png>)
+* **Validació**: Lògica `MoveTo` del servidor i gestió de col·lisions.
+
+### 4. Sistema de Combat (Knockback)
+* **Descripció**: Moment de l'impacte aplicant força a l'NPC amb la tecla 'F'.
+* **Evidència**: ![Efecte knockback]![knock](<Captura de pantalla 2026-05-31 205722.png>)
+* **Validació**: Comunicació `RemoteEvent` (Client -> Servidor) i `LinearVelocity`.
+
+### 5. Cicle de Reinici (GameOver)
+* **Descripció**: Neteja del `Workspace` i reactivació del menú després d'una mort.
+* **Evidència**: ![Reset del joc]![mort](<Captura de pantalla 2026-05-31 205804.png>)
+![reinici](<Captura de pantalla 2026-05-31 192411-1.png>)
+* **Validació**: Estabilitat del cicle `GameOver()` i reactivació de la interfície.
+---
+
 ## 3. Registre d'Incidències i Solucions
 
 | Incidència | Causa Arrel | Solució Aplicada |
